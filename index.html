@@ -15,7 +15,7 @@
   </style>
 </head>
 <body>
-  <h1>Prenota il tuo tavolo</h1>
+  <h1>Prenota il tuo tavolo per la cena della festa delle matricolee</h1>
   <div id="formWrap">
     <label>Nome
       <input id="name" type="text" placeholder="Mario Rossi" />
@@ -34,7 +34,7 @@
   </div>
 
   <script>
-    const WEB_APP = 'https://script.google.com/macros/s/AKfycbyNHYDdtPROa2uKz3vfsG4JKU_U2AibhAi8f1qw1edLHpiOig80QJKcJreevgNxxptu/exec';
+    const WEB_APP = 'https://script.google.com/macros/s/AKfycbyNHYDdtPROa2uKz3vfsG4JKU_U2AibhAi8f1qw1edLHpiOig80QJKcJreevgNxxptu/exec'; // <-- qui il link Web App
 
     async function fetchTables() {
       const res = await fetch(WEB_APP + '?action=listTables');
