@@ -1,149 +1,159 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Prenota il tuo tavolo per la cena della festa delle matricolee</title>
-  <style>
-    body{font-family:system-ui,Arial;max-width:720px;margin:40px auto;padding:0 16px;}
-    label{display:block;margin-top:12px}
-    select,input{padding:8px;width:100%;box-sizing:border-box;margin-top:6px}
-    button{margin-top:14px;padding:10px 14px;border:none;background:#1b6;color:#fff;border-radius:6px;cursor:pointer}
-    .info{margin-top:12px;padding:10px;background:#f2f2f2;border-radius:6px}
-    .error{background:#ffd6d6}
-    .success{background:#d6ffd9}
-  </style>
+<meta charset="UTF-8">
+<title>Prenotazioni Tavoli</title>
+<style>
+body { font-family: Arial, sans-serif; max-width: 720px; margin: 30px auto; padding: 0 16px; }
+label { display: block; margin-top: 10px; }
+input, select { padding: 6px; width: 100%; margin-top: 4px; }
+button { margin-top: 12px; padding: 10px; background: #1b6; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+.info { margin-top: 10px; padding: 10px; border-radius: 6px; display: none; }
+.error { background: #ffd6d6; }
+.success { background: #d6ffd9; }
+</style>
 </head>
 <body>
-  <h1>Prenota il tuo tavolo per la cena della festa delle matricolee</h1>
-  <div id="formWrap">
-    <label>Nome
-      <input id="name" type="text" placeholder="Mario Rossi" />
-    </label>
-    <label>Tavolo
-      <select id="tableSelect"><option>Caricamento...</option></select>
-    </label>
-    <label>Numero persone
-      <select id="peopleSelect"></select>
-    </label>
 
-    <div id="namesContainer"></div>
+<h1>Prenota il tuo tavolo</h1>
 
-    <button id="submitBtn">Prenota</button>
-    <div id="message" class="info" style="display:none"></div>
-  </div>
+<label>Nome
+  <input id="name" type="text" placeholder="Mario Rossi" />
+</label>
 
-  <script>
-    const WEB_APP = 'https://script.google.com/macros/s/AKfycbwkPy4uXRWZSjpOzoU4rGuDMLHrtcHjQySr4nISGi9M0Ltk6WvgOcBzYLERMdAuijYg/exec'; // <-- qui il link Web App
+<label>Tavolo
+  <select id="tableSelect"><option>Caricamento...</option></select>
+</label>
 
-    async function fetchTables() {
-      const res = await fetch(WEB_APP + '?action=listTables');
-      return await res.json();
-    }
+<label>Numero persone
+  <select id="peopleSelect"></select>
+</label>
 
-    function populateTables(tables) {
-      const sel = document.getElementById('tableSelect');
-      sel.innerHTML = '';
-      const available = tables.filter(t => t.remaining > 0);
-      if (available.length === 0) {
-        sel.innerHTML = '<option>Nessun tavolo disponibile</option>';
-        return;
-      }
-      available.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.tableId;
-        opt.dataset.remaining = t.remaining;
-        opt.textContent = `${t.name} — ${t.remaining} posti liberi`;
-        sel.appendChild(opt);
-      });
-      updatePeopleSelect();
-    }
+<div id="namesContainer"></div>
 
-    function updatePeopleSelect() {
-      const sel = document.getElementById('tableSelect');
-      const peopleSel = document.getElementById('peopleSelect');
-      const opt = sel.options[sel.selectedIndex];
-      const remaining = opt ? parseInt(opt.dataset.remaining || '0') : 0;
-      peopleSel.innerHTML = '';
-      for (let i=1;i<=remaining;i++) {
-        const o = document.createElement('option');
-        o.value = i;
-        o.textContent = i + (i===1 ? ' persona' : ' persone');
-        peopleSel.appendChild(o);
-      }
-      createNameFields(1);
-    }
+<button id="submitBtn">Prenota</button>
+<div id="message" class="info"></div>
 
-    function createNameFields(count) {
-      const container = document.getElementById('namesContainer');
-      container.innerHTML = '';
-      for (let i=1;i<=count-1;i++) { // -1 perché il nome principale è già inserito
-        const label = document.createElement('label');
-        label.textContent = `Nome persona ${i+1}`;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'personName';
-        container.appendChild(label);
-        container.appendChild(input);
-      }
-    }
+<script>
+const WEB_APP = 'https://script.google.com/macros/s/AKfycbwkPy4uXRWZSjpOzoU4rGuDMLHrtcHjQySr4nISGi9M0Ltk6WvgOcBzYLERMdAuijYg/exec';
 
-    document.getElementById('peopleSelect').addEventListener('change', e => {
-      createNameFields(parseInt(e.target.value,10));
+// Fetch tavoli dal Web App
+async function fetchTables() {
+  try {
+    const res = await fetch(WEB_APP + '?action=listTables');
+    const tables = await res.json();
+    return tables;
+  } catch(err) {
+    console.error('Errore fetch tavoli:', err);
+    return [];
+  }
+}
+
+// Popola dropdown Tavolo
+function populateTables(tables){
+  const sel = document.getElementById('tableSelect');
+  sel.innerHTML='';
+  const available = tables.filter(t=>t.remaining>0);
+  if(available.length === 0){
+    sel.innerHTML='<option>Nessun tavolo disponibile</option>';
+    return;
+  }
+  available.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.tableId;
+    opt.dataset.remaining = t.remaining;
+    opt.textContent = `${t.name} — ${t.remaining} posti liberi`;
+    sel.appendChild(opt);
+  });
+  updatePeopleSelect();
+}
+
+// Popola dropdown Numero persone
+function updatePeopleSelect(){
+  const tableSel = document.getElementById('tableSelect');
+  const peopleSel = document.getElementById('peopleSelect');
+  const opt = tableSel.options[tableSel.selectedIndex];
+  const remaining = opt ? parseInt(opt.dataset.remaining||'0') : 0;
+  peopleSel.innerHTML='';
+  for(let i=1;i<=remaining;i++){
+    const o = document.createElement('option');
+    o.value=i; o.textContent=i + (i===1?' persona':' persone');
+    peopleSel.appendChild(o);
+  }
+  createNameFields(1);
+}
+
+// Genera campi per i nomi aggiuntivi
+function createNameFields(count){
+  const container = document.getElementById('namesContainer');
+  container.innerHTML='';
+  for(let i=1;i<=count-1;i++){
+    const label = document.createElement('label');
+    label.textContent = `Nome persona ${i+1}`;
+    const input = document.createElement('input');
+    input.type='text';
+    input.className='personName';
+    container.appendChild(label);
+    container.appendChild(input);
+  }
+}
+
+// Event listeners
+document.getElementById('tableSelect').addEventListener('change', updatePeopleSelect);
+document.getElementById('peopleSelect').addEventListener('change', e => createNameFields(parseInt(e.target.value,10)));
+
+// Inizializza form
+async function init(){
+  const tables = await fetchTables();
+  populateTables(tables);
+}
+init();
+
+// Invia prenotazione
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('name').value.trim();
+  const tableId = document.getElementById('tableSelect').value;
+  const people = parseInt(document.getElementById('peopleSelect').value,10);
+  const nameInputs = Array.from(document.querySelectorAll('.personName')).map(i=>i.value.trim()).filter(Boolean);
+  const msgDiv = document.getElementById('message');
+  
+  msgDiv.style.display='none'; msgDiv.className='info';
+
+  if(!name || !tableId || nameInputs.length !== people-1){
+    msgDiv.textContent='Compila tutti i campi correttamente.'; 
+    msgDiv.classList.add('error'); 
+    msgDiv.style.display='block'; 
+    return;
+  }
+
+  const payload = { tableId, people, names:[name, ...nameInputs] };
+
+  try {
+    const res = await fetch(WEB_APP, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
     });
-
-    async function init() {
-      const tables = await fetchTables();
-      populateTables(tables);
+    const data = await res.json();
+    if(data.success){
+      msgDiv.textContent='Prenotazione registrata!';
+      msgDiv.classList.add('success');
+      msgDiv.style.display='block';
+      init(); // Aggiorna tavoli
+    } else {
+      msgDiv.textContent='Errore: '+(data.error||'');
+      msgDiv.classList.add('error'); 
+      msgDiv.style.display='block';
     }
+  } catch(err){
+    msgDiv.textContent='Errore di rete.';
+    msgDiv.classList.add('error'); 
+    msgDiv.style.display='block';
+  }
+});
+</script>
 
-    document.getElementById('submitBtn').addEventListener('click', async () => {
-      const name = document.getElementById('name').value.trim();
-      const tableId = document.getElementById('tableSelect').value;
-      const people = parseInt(document.getElementById('peopleSelect').value,10);
-      const nameInputs = Array.from(document.querySelectorAll('.personName')).map(i=>i.value.trim()).filter(Boolean);
-      const msgDiv = document.getElementById('message');
-
-      msgDiv.style.display='none';
-      msgDiv.className='info';
-
-      if (!name || !tableId || nameInputs.length !== people-1) {
-        msgDiv.textContent='Compila tutti i campi correttamente.';
-        msgDiv.classList.add('error');
-        msgDiv.style.display='block';
-        return;
-      }
-
-      const payload = { tableId, people, names: [name, ...nameInputs] };
-
-      try {
-        const res = await fetch(WEB_APP, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.success) {
-          msgDiv.textContent='Prenotazione registrata!';
-          msgDiv.classList.add('success');
-          msgDiv.style.display='block';
-          init();
-        } else {
-          msgDiv.textContent='Errore: '+(data.error||'');
-          msgDiv.classList.add('error');
-          msgDiv.style.display='block';
-        }
-      } catch {
-        msgDiv.textContent='Errore di rete.';
-        msgDiv.classList.add('error');
-        msgDiv.style.display='block';
-      }
-    });
-
-    init();
-  </script>
 </body>
 </html>
-
 
 
