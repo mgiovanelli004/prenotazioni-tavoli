@@ -17,8 +17,8 @@
 <body>
   <h1>Prenota il tuo tavolo</h1>
   <div id="formWrap">
-    <label>Email
-      <input id="email" type="email" placeholder="mario@example.com" />
+    <label>Nome
+      <input id="name" type="text" placeholder="Mario Rossi" />
     </label>
     <label>Tavolo
       <select id="tableSelect"><option>Caricamento...</option></select>
@@ -34,7 +34,7 @@
   </div>
 
   <script>
-    const WEB_APP = 'YOUR_WEB_APP_URL'; // <-- sostituisci con URL Web App
+    const WEB_APP = 'https://script.google.com/macros/s/AKfycbyNHYDdtPROa2uKz3vfsG4JKU_U2AibhAi8f1qw1edLHpiOig80QJKcJreevgNxxptu/exec';
 
     async function fetchTables() {
       const res = await fetch(WEB_APP + '?action=listTables');
@@ -77,9 +77,9 @@
     function createNameFields(count) {
       const container = document.getElementById('namesContainer');
       container.innerHTML = '';
-      for (let i=1;i<=count;i++) {
+      for (let i=1;i<=count-1;i++) { // -1 perché il nome principale è già inserito
         const label = document.createElement('label');
-        label.textContent = `Nome persona ${i}`;
+        label.textContent = `Nome persona ${i+1}`;
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'personName';
@@ -98,7 +98,7 @@
     }
 
     document.getElementById('submitBtn').addEventListener('click', async () => {
-      const email = document.getElementById('email').value.trim();
+      const name = document.getElementById('name').value.trim();
       const tableId = document.getElementById('tableSelect').value;
       const people = parseInt(document.getElementById('peopleSelect').value,10);
       const nameInputs = Array.from(document.querySelectorAll('.personName')).map(i=>i.value.trim()).filter(Boolean);
@@ -107,14 +107,14 @@
       msgDiv.style.display='none';
       msgDiv.className='info';
 
-      if (!email || !tableId || nameInputs.length !== people) {
+      if (!name || !tableId || nameInputs.length !== people-1) {
         msgDiv.textContent='Compila tutti i campi correttamente.';
         msgDiv.classList.add('error');
         msgDiv.style.display='block';
         return;
       }
 
-      const payload = { email, tableId, people, names: nameInputs };
+      const payload = { tableId, people, names: [name, ...nameInputs] };
 
       try {
         const res = await fetch(WEB_APP, {
@@ -144,3 +144,4 @@
   </script>
 </body>
 </html>
+
