@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Prenota Tavolo</title>
+  <style>
+    body{font-family:system-ui,Arial;max-width:720px;margin:40px auto;padding:0 16px;}
+    label{display:block;margin-top:12px}
+    select,input{padding:8px;width:100%;box-sizing:border-box;margin-top:6px}
+    button{margin-top:14px;padding:10px 14px;border:none;background:#1b6;color:#fff;border-radius:6px;cursor:pointer}
+    .info{margin-top:12px;padding:10px;background:#f2f2f2;border-radius:6px}
+    .error{background:#ffd6d6}
+    .success{background:#d6ffd9}
+  </style>
+</head>
+<body>
+  <h1>Prenota il tuo tavolo</h1>
+  <div id="formWrap">
+    <label>Email
+      <input id="email" type="email" placeholder="mario@example.com" />
+    </label>
+    <label>Tavolo
+      <select id="tableSelect"><option>Caricamento...</option></select>
+    </label>
+    <label>Numero persone
+      <select id="peopleSelect"></select>
+    </label>
+
+    <div id="namesContainer"></div>
+
+    <button id="submitBtn">Prenota</button>
+    <div id="message" class="info" style="display:none"></div>
+  </div>
+
+  <script>
+    const WEB_APP = 'YOUR_WEB_APP_URL'; // <-- sostituisci con URL Web App
+
+    async function fetchTables() {
+      const res = await fetch(WEB_APP + '?action=listTables');
+      return await res.json();
+    }
+
+    function populateTables(tables) {
+      const sel = document.getElementById('tableSelect');
+      sel.innerHTML = '';
+      const available = tables.filter(t => t.remaining > 0);
+      if (available.length === 0) {
+        sel.innerHTML = '<option>Nessun tavolo disponibile</option>';
+        return;
+      }
+      available.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.tableId;
+        opt.dataset.remaining = t.remaining;
+        opt.textContent = `${t.name} — ${t.remaining} posti liberi`;
+        sel.appendChild(opt);
+      });
+      updatePeopleSelect();
+    }
+
+    function updatePeopleSelect() {
+      const sel = document.getElementById('tableSelect');
+      const peopleSel = document.getElementById('peopleSelect');
+      const opt = sel.options[sel.selectedIndex];
+      const remaining = opt ? parseInt(opt.dataset.remaining || '0') : 0;
+      peopleSel.innerHTML = '';
+      for (let i=1;i<=remaining;i++) {
+        const o = document.createElement('option');
+        o.value = i;
+        o.textContent = i + (i===1 ? ' persona' : ' persone');
+        peopleSel.appendChild(o);
+      }
+      createNameFields(1);
+    }
+
+    function createNameFields(count) {
+      const container = document.getElementById('namesContainer');
+      container.innerHTML = '';
+      for (let i=1;i<=count;i++) {
+        const label = document.createElement('label');
+        label.textContent = `Nome persona ${i}`;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'personName';
+        container.appendChild(label);
+        container.appendChild(input);
+      }
+    }
+
+    document.getElementById('peopleSelect').addEventListener('change', e => {
+      createNameFields(parseInt(e.target.value,10));
+    });
+
+    async function init() {
+      const tables = await fetchTables();
+      populateTables(tables);
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const tableId = document.getElementById('tableSelect').value;
+      const people = parseInt(document.getElementById('peopleSelect').value,10);
+      const nameInputs = Array.from(document.querySelectorAll('.personName')).map(i=>i.value.trim()).filter(Boolean);
+      const msgDiv = document.getElementById('message');
+
+      msgDiv.style.display='none';
+      msgDiv.className='info';
+
+      if (!email || !tableId || nameInputs.length !== people) {
+        msgDiv.textContent='Compila tutti i campi correttamente.';
+        msgDiv.classList.add('error');
+        msgDiv.style.display='block';
+        return;
+      }
+
+      const payload = { email, tableId, people, names: nameInputs };
+
+      try {
+        const res = await fetch(WEB_APP, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          msgDiv.textContent='Prenotazione registrata!';
+          msgDiv.classList.add('success');
+          msgDiv.style.display='block';
+          init();
+        } else {
+          msgDiv.textContent='Errore: '+(data.error||'');
+          msgDiv.classList.add('error');
+          msgDiv.style.display='block';
+        }
+      } catch {
+        msgDiv.textContent='Errore di rete.';
+        msgDiv.classList.add('error');
+        msgDiv.style.display='block';
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
